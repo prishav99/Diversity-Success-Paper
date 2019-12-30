@@ -1,0 +1,170 @@
+---
+title: "Paper Final - Does Diversity affect Success in Soccer"
+author: "Alex Galinsky, Mike Hatfield, Dennis Ortega, Rishav Palchowdhury, Stephen Santoro"
+date: "10 December 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = FALSE, results = 'hide'}
+analysis <- read.csv("Master_DF.csv",header = T)
+analysis <- analysis[order(analysis$League),] # order by league
+
+
+
+footballModel <- lm(W ~ Diversity + MktVal + League, data = analysis)
+#summary(footballModel) - summary table need to include
+
+footballModelGDiff <- lm(GDiff ~ Diversity + MktVal + League, data = analysis)
+#summary(footballModelGDiff) - summary table need to include
+
+
+analysis$predicted <- predict(footballModel)
+analysis$residuals <- residuals(footballModel)
+library(ggplot2)
+# ggplot(analysis, aes(x = Diversity, y = W)) +
+#   geom_segment(aes(xend = Diversity, yend = predicted), alpha = .2) +  # Lines to connect points
+#   geom_point() +  # Points of actual values
+#   geom_point(aes(y = predicted), shape = 1) +  # Points of predicted values
+#   theme_bw() + geom_smooth()
+
+resTable <- c("Bundesliga" = mean(analysis[1:180,]$residuals), 
+              "La Liga" = mean(analysis[181:380,]$residuals), 
+              "Ligue 1" = mean(analysis[381:580,]$residuals), 
+              "Premier League" = mean(analysis[581:780,]$residuals), 
+              "Series A" = mean(analysis[781:980,]$residuals))
+
+
+#plot(footballModel) #Diagnostic plots
+#plot(footballModelGDiff) #Diagnostic plots
+
+#Show that wealth differs by league
+league <- c("Bundesliga", "La Liga", "Ligue 1", "Premier League", "Series A") # get Team
+wealth <- c(mean(analysis[1:180,]$MktVal),mean(analysis[181:380,]$MktVal),mean(analysis[381:580,]$MktVal),mean(analysis[581:780,]$MktVal),mean(analysis[781:980,]$MktVal)) #get avg 
+#mkt Val
+wealthByLeague <- data.frame(league <- league, mktVal <- wealth)
+p<-ggplot(data = wealthByLeague, aes(x=league, mktVal)) +
+  geom_bar(stat="identity")
+
+mean(analysis[781:980,]$Diversity)
+```
+
+
+
+
+##Introduction
+
+In recent years, diversity has been the center of debate for many institutions such as universities, political bodies, and athletic associations. Advocates for diversity often argue that a diverse talent pool leads to improved outcome for institutions. Opponents of using diversity as an indicator for future success often argue recruitment of talent should be independent of diversity. In this study, football team diversity is examined over a 10 year period to investigate whether diversity does in fact improve a team's performance. In examining this relationship, the study will attempt to isolate diversity's effect on performance to truly see the theorized benefit for every team. In order to achieve this, data is collected around financial value of teams, performance, and team diversity from 5 leagues over 10 seasons.
+$\newline$ Peformance and success in this study is defined by wins per season and goal differential. In order to build a succesful roster, managers attempt to find the relevant features of players. Players must not only be individually skilled, but also have complimentary styles. One way to improve chances of players working well together is diversity. Therefore, in recruting players, managers should include diversity in the qualities they desire for their team.
+$\newline$ To complete this study, 5 of the most popular and skilled leagues are chosen. The leagues are the German Bundesliga, Spanish La Liga, French Ligue 1, English Premier League and Italian Serie A. The Bundeliga has 18 teams per season while all other leagues have 20. These leagues use a promotion-relegation system, which means at the end every season, the bottom 3 teams of the highest-tier league gets relegated into the lower-tier league while the top 3 teams in the lower-tier league gets promoted to the highest-tier league. However there are 2 leagues that have a slight variation to this system. In the Bundesliga, the team that finishes 16th, will play the 3rd ranked team in Bundesliga 2 (the lower-tier league). The winner of that game will play in the Bundesliga the following season. Starting in the 2016-2017 Ligue 1 season, the team that finishes 18th, will play the 3rd ranked team in Ligue 2 ( the lower league) and the winner of that game will play in Ligue 1 in the next season.
+
+##Methods
+
+To conduct this study, data was collected from 4 sources - TransferMarkt, ESPN, FoxSoccer, and FBref. These sources were used to collect market value of teams, rosters, and team performance per season.
+
+$\newline$The first source is Transfermarkt. TransferMarkt is a database for players’ market value esimations, which are largely based off a player’s performance and age. These market value estimations of players on a team are aggregated for a team’s total market value, which are used to measure the wealth of a team. TransferMarkt is the most used source in studies pertaining to  
+$\newline$
+The second and third sources are ESPN and FoxSoccer. ESPN and FoxSoccer were used to gather information about teams’ rosters and player nationalities. Using the roster and nationality of teams, a diversity figure can be computed. To calculate diversity, the Simpson's Index was implemented in this study. The Simpson's Index is a measure of diversity typically used in Biostatistics. The formula is as follows:
+$$Diversity = 1 - \dfrac{\sum n(n-1)}{N(N-1)}$$
+To apply the formula, "n", typically used to represent the number of organisms of a particular species, was replaced by number of players of a particular nationality. "N", typically used to represent the total number of organisms of that species, was used to represent total number of players on a team. The outcome variable is between 0 and 1 where 0 means all players are of the same nationality and 1 means every player has a different nationality. (Citation)
+$\newline$
+
+$\newline$
+The fourth and final source is FBref. This source provided teams’ performances over 10 seasons such as wins per season, goal differential per season, and points scored. 
+
+$\newline$
+This data was collected in regards to the Bundesliga, La Liga, Ligue 1, Premier League, and Serie A located in Germany, Spain, France, England, and Italy respectively. The dataset composed was collected over a 10 year period starting in the 2009-2010 season and ending with the 2018-2019 season. Then we collected the league’s final results over the same time span. A preview of the dataset is provided here:
+```{r, echo = FALSE}
+showhead <- analysis[,-c(1,8,9,15,16)]
+head(showhead)
+```
+
+
+To test whether diversity affects wins, a simple linear regression was run of Per Season Wins on Per Season Diversity. As one can see, per season diversity was found to have a statistically significant effect on per season wins.
+```{r, echo = FALSE}
+#tTHIS IS THE SCATTERPLOT OF WINS ON DIVERSITY IDK IF TO INCLUDE looks like a "formula = y ~ poly(x, 2)" might be better fit
+winDiversityPlot <- ggplot(data = analysis, aes(x = Diversity, y = W))+ 
+  geom_point() + 
+  geom_smooth(method=lm)
+```
+
+```{r, echo = FALSE}
+simpleModel <- lm(analysis$W ~ analysis$Diversity)
+summary(simpleModel)
+```
+One area of concern was whether the total market value of a team per season was confounding the results. That is, perhaps total market value per season caused both wins per season and diversity to increase or decrease. A team's total market value represents a team's financial value and thus, also their buying power. A team with more buying power may be able to acquire better players from around the world and thus, also achieve more wins.
+$\newline$ To test this, a simple regression of diversity per season was ran on market value per season. One can see from the following table, that though per season market value is statistically significant in predicting per season diversity, standard errors are quite large. Therefore, the interpration is that the has high variability and noise, and thus, a large confidence interval.   
+```{r, echo = FALSE}
+#summary(lm(analysis$W ~ analysis$MktVal))
+divValModel <- lm(analysis$Diversity ~ analysis$MktVal)
+summary(divValModel)
+```
+This high variability can be further observed in the following plot. As market value increases, diversity also increases. There are definitely outliers however like. (WE NEED TO TALK ABOUT WHICH ONES.)
+```{r, echo = FALSE}
+
+diversityMktValPlot <- ggplot(data = analysis, aes(x = MktVal, y = Diversity))+ 
+  geom_point() + 
+  geom_smooth(method=lm)
+
+diversityMktValPlot
+
+
+```
+Next, per season wins is run on per season market value. Similar to the previous model, market value has statistically significant results on wins but with high variability. Essentially, richer teams win more.
+
+```{r, echo = FALSE}
+winValModel <- lm(analysis$W~ analysis$MktVal)
+summary(divValModel <- lm(analysis$W ~ analysis$MktVal))
+winsMktValPlot <- ggplot(data = analysis, aes(x = MktVal, y = W))+ 
+  geom_point() + 
+  geom_smooth(method=lm)
+```
+The same figure is provied as the previous model substituting diversity for market value. Here, the trend has smaller variability as supported by the smaller stander errors in the model.
+$\newline$
+To control for total market value per season, it is included in the model. 
+```{r,echo=FALSE}
+model2 <- lm(analysis$W ~ analysis$Diversity + analysis$MktVal)
+```
+Furthermore, league may affect the model. One may argue that different leagues may adopt more diverse rosters, may be more rich and thus, be the real cause of increased wins. To examine this, one can look at the residuals. As one can see, they are non-zero and so, leagues are not independent of each other.
+```{r, echo = FALSE}
+res <- (model2$residuals)
+resTable <- c(sum(res[1:180]),
+sum(res[181:380]),
+sum(res[381:580]),
+sum(res[581:780]),
+sum(res[781:980]))
+resTable
+```
+Therefore, we include league in the final model as well.
+```{r, echo = FALSE}
+summary(lm(analysis$W ~ analysis$Diversity + analysis$MktVal + analysis$League))
+```
+
+
+##Results
+
+##Limitations
+Throughout this project, there were a few limitations we encountered in performing our analysis. Systematically, the way we measured diversity of a team and the team’s market value, and time limitations came from the amount of data we collected. 
+$\newline$
+	Systematically, we measured diversity using the Simpson’s Index as explained above, but there are many other ways possible. Other studies have used measurements of ethnicity or linguistics. A linguistics measurement would be able to measure how well the players can communicate with each other and therefore how well they work together and their productivity. The market value of the teams was used to get an estimate of a team’s wealth. Being taken from transfermarkt.com, those values are estimates of a team’s wealth made by experts and are not an exact value for the team’s wealth as the true numbers are not published publicly. 
+$\newline$
+	The biggest limitation with this project was the issue of the year-to-year performance of teams. Even though a team’s success is different slightly every year, it is unreasonable to assume that a team’s performance one year is completely independent of its performance the year prior. For example, if Manchester City, a team in the English Premier League, wins the league one year, they will likely still perform well the following year with much of their roster unchanged and a similar, if not identical, structure of the organization. We originally started with three consecutive seasons worth of data from all 5 leagues. This was a problem because the year-to-year performance issue was large as teams did not change much over three seasons, and all three were related, which our multiple linear regression model did not assume. There was a little variation in performance and roster diversity but overall we did not measure the performance of the teams for long enough to make a difference. To reduce this risk, we gathered data from the previous 7 consecutive seasons, giving us a total of 10 seasons worth of data. This is better because over 10 seasons, rosters of teams change almost entirely with very few players remaining on the same roster for all 10 years, meaning the diversity of an individual team will vary enough to account for the year-to-year effect. This will make our p-values more honest and give us a better model of the true relationship between the variables.
+$\newline$
+	However, the increase from 3 to 10 seasons may not be enough to make the model completely accurate. The p-values, even with 10 years of data, may still be slightly dishonest as there are a few high performing teams in each league that are consistently in the top 10 positions at the end of almost every season. We believe, however, that with the significance of the results, with nearly half of the teams in the leagues changing from the first year measured to the last, and with including market values and which league a team comes from in our model to correct for a confounding effect that our results are still an accurate representation of the real world.
+
+##Conclusion
+In professional soccer, the main goal is to win. Figuring out how to win is a difficult task in itself. Diversity is a contributing factor to the end goal of finishing at the top of the table in all five leagues. Using the Simpson Diversity Index, assignment of diversity values were given to each team’s season over the last ten years which accounts for eight hundred different seasons. Tracking the success of these season was measured in how many wins each team had. After multiple linear regression on our dependent variable wins, findings concluded that Diversity positively affected how many wins a team had at the end of the season. While considering many other factors in our model, it proved statistically significant as well. In order for a team to succeed, the manager should try to find diverse players that mesh well together. In future studies, researchers could continue to add other factors to our model which may cause an effect like language and weight variables. This may provide more accuracy, but I do not feel that it will disprove our findings that diversity is a contributing factor. It will make them even stronger.
+$\newline$ 
+##Works Cited
+
+Statistics How to - https://www.statisticshowto.datasciencecentral.com/simpsons-diversity-index/ 
+ESPN
+FBref.com
+Transfermarkt
+
+
+
+
